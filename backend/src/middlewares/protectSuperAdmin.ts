@@ -2,17 +2,19 @@ import { Request, Response, NextFunction } from "express";
 import { ApiError } from "../utils/ApiError";
 import { prisma } from "../utils/prisma";
 
-// Ye middleware SUPER_ADMIN user ko delete/deactivate hone se rokta hai
-// Koi bhi route jisme kisi user ko modify ya delete kiya jata hai
-// wahan ye middleware laga do
+const getId = (id: string | string[] | undefined): string | undefined => {
+  if (!id) return undefined;
+  return Array.isArray(id) ? id[0] : id;
+};
 
+// Prevent SUPER_ADMIN modification/deletion
 export const protectSuperAdmin = async (
   req: Request,
   _res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    const targetId = req.params.id;
+    const targetId = getId(req.params.id);
 
     if (!targetId) return next();
 
