@@ -1,0 +1,371 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String         @id @default(cuid())
+  name                 String
+  email                String         @unique
+  password             String
+  role                 Role           @default(ADMIN)
+  isActive             Boolean        @default(true)
+  avatar               String?
+  phone                String?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  createdAnnouncements Announcement[]
+  recordedPayments     FeePayment[]
+  createdFeeStructures FeeStructure[]
+  createdNotices       Notice[]
+  refreshTokens        RefreshToken[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model AcademicYear {
+  id            String         @id @default(cuid())
+  name          String         @unique
+  startDate     DateTime
+  endDate       DateTime
+  isCurrent     Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  classes       Class[]
+  exams         Exam[]
+  feeStructures FeeStructure[]
+
+  @@map("academic_years")
+}
+
+model Class {
+  id             String         @id @default(cuid())
+  name           String
+  section        String
+  academicYearId String
+  capacity       Int            @default(40)
+  createdAt      DateTime       @default(now())
+  academicYear   AcademicYear   @relation(fields: [academicYearId], references: [id])
+  feeStructures  FeeStructure[]
+  students       Student[]
+  subjects       Subject[]
+  timetables     Timetable[]
+
+  @@unique([name, section, academicYearId])
+  @@map("classes")
+}
+
+model Subject {
+  id           String       @id @default(cuid())
+  name         String
+  code         String?
+  classId      String
+  totalMarks   Int          @default(100)
+  passingMarks Int          @default(40)
+  createdAt    DateTime     @default(now())
+  attendances  Attendance[]
+  marks        Mark[]
+  class        Class        @relation(fields: [classId], references: [id])
+  timetables   Timetable[]
+
+  @@map("subjects")
+}
+
+model Staff {
+  id            String         @id @default(cuid())
+  employeeNo    String         @unique
+  name          String
+  gender        Gender
+  cnic          String?        @unique
+  phone         String
+  email         String?
+  address       String?
+  staffType     StaffType
+  designation   String?
+  joinDate      DateTime
+  salary        Decimal        @db.Decimal(10, 2)
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  attendances   Attendance[]   @relation("StaffAttendance")
+  leaveRequests LeaveRequest[]
+  timetables    Timetable[]
+
+  @@map("staff")
+}
+
+model LeaveRequest {
+  id         String      @id @default(cuid())
+  staffId    String
+  fromDate   DateTime
+  toDate     DateTime
+  reason     String
+  status     LeaveStatus @default(PENDING)
+  approvedBy String?
+  createdAt  DateTime    @default(now())
+  staff      Staff       @relation(fields: [staffId], references: [id])
+
+  @@map("leave_requests")
+}
+
+model Student {
+  id             String          @id @default(cuid())
+  rollNo         String          @unique
+  admissionNo    String          @unique
+  name           String
+  gender         Gender
+  dateOfBirth    DateTime
+  religion       String?
+  address        String?
+  photo          String?
+  status         StudentStatus   @default(ACTIVE)
+  admissionDate  DateTime
+  classId        String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  fatherName     String
+  fatherPhone    String
+  fatherCnic     String?
+  motherName     String?
+  motherPhone    String?
+  guardianName   String?
+  guardianPhone  String?
+  attendances    Attendance[]
+  feePayments    FeePayment[]
+  marks          Mark[]
+  class          Class           @relation(fields: [classId], references: [id])
+  transferRecord TransferRecord?
+
+  @@map("students")
+}
+
+model TransferRecord {
+  id            String   @id @default(cuid())
+  studentId     String   @unique
+  transferDate  DateTime
+  transferredTo String
+  reason        String?
+  certificateNo String?
+  issuedBy      String?
+  createdAt     DateTime @default(now())
+  student       Student  @relation(fields: [studentId], references: [id])
+
+  @@map("transfer_records")
+}
+
+model Attendance {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  status    AttendanceStatus
+  remarks   String?
+
+  studentId String?
+  staffId   String?
+
+  subjectId String?   // keep optional but REMOVE from unique
+
+  staff     Staff?    @relation("StaffAttendance", fields: [staffId], references: [id])
+  student   Student?  @relation(fields: [studentId], references: [id])
+  subject   Subject?  @relation(fields: [subjectId], references: [id])
+
+  @@unique([studentId, date])   // 🔥 FIXED
+  @@unique([staffId, date])
+
+  @@map("attendances")
+}
+
+model Timetable {
+  id        String   @id @default(cuid())
+  classId   String
+  subjectId String
+  staffId   String
+  dayOfWeek Int
+  startTime String
+  endTime   String
+  room      String?
+  createdAt DateTime @default(now())
+  class     Class    @relation(fields: [classId], references: [id])
+  staff     Staff    @relation(fields: [staffId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+
+  @@unique([classId, dayOfWeek, startTime])
+  @@map("timetables")
+}
+
+model Exam {
+  id             String       @id @default(cuid())
+  name           String
+  examType       ExamType
+  academicYearId String
+  startDate      DateTime
+  endDate        DateTime
+  createdAt      DateTime     @default(now())
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  marks          Mark[]
+
+  @@map("exams")
+}
+
+model Mark {
+  id            String   @id @default(cuid())
+  studentId     String
+  subjectId     String
+  examId        String
+  obtainedMarks Decimal  @db.Decimal(6, 2)
+  totalMarks    Int
+  grade         String?
+  remarks       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  exam          Exam     @relation(fields: [examId], references: [id])
+  student       Student  @relation(fields: [studentId], references: [id])
+  subject       Subject  @relation(fields: [subjectId], references: [id])
+
+  @@unique([studentId, subjectId, examId])
+  @@map("marks")
+}
+
+model FeeStructure {
+  id             String       @id @default(cuid())
+  name           String
+  classId        String
+  academicYearId String
+  amount         Decimal      @db.Decimal(10, 2)
+  dueDay         Int          @default(10)
+  lateFine       Decimal      @default(0) @db.Decimal(10, 2)
+  createdById    String
+  createdAt      DateTime     @default(now())
+  payments       FeePayment[]
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  class          Class        @relation(fields: [classId], references: [id])
+  createdBy      User         @relation(fields: [createdById], references: [id])
+
+  @@map("fee_structures")
+}
+
+model FeePayment {
+  id             String       @id @default(cuid())
+  receiptNo      String       @unique @default(cuid())
+  studentId      String
+  feeStructureId String
+  month          Int
+  year           Int
+  amountDue      Decimal      @db.Decimal(10, 2)
+  amountPaid     Decimal      @default(0) @db.Decimal(10, 2)
+  lateFine       Decimal      @default(0) @db.Decimal(10, 2)
+  discount       Decimal      @default(0) @db.Decimal(10, 2)
+  status         FeeStatus    @default(UNPAID)
+  paidAt         DateTime?
+  paymentMethod  String?
+  remarks        String?
+  recordedById   String
+  createdAt      DateTime     @default(now())
+  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id])
+  recordedBy     User         @relation(fields: [recordedById], references: [id])
+  student        Student      @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, feeStructureId, month, year])
+  @@map("fee_payments")
+}
+
+model Notice {
+  id          String       @id @default(cuid())
+  title       String
+  content     String
+  target      NoticeTarget @default(ALL)
+  isPinned    Boolean      @default(false)
+  publishedAt DateTime     @default(now())
+  expiresAt   DateTime?
+  createdById String
+  createdAt   DateTime     @default(now())
+  createdBy   User         @relation(fields: [createdById], references: [id])
+
+  @@map("notices")
+}
+
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  message     String
+  createdById String
+  createdAt   DateTime @default(now())
+  createdBy   User     @relation(fields: [createdById], references: [id])
+
+  @@map("announcements")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum StudentStatus {
+  ACTIVE
+  TRANSFERRED
+  LEFT
+  GRADUATED
+}
+
+enum FeeStatus {
+  UNPAID
+  PAID
+  PARTIAL
+  WAIVED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  LEAVE
+}
+
+enum ExamType {
+  MIDTERM
+  FINAL
+  UNIT_TEST
+  ASSIGNMENT
+  PRACTICAL
+}
+
+enum StaffType {
+  TEACHER
+  CLERK
+  PEON
+  ACCOUNTANT
+  OTHER
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum NoticeTarget {
+  ALL
+  TEACHERS
+  STUDENTS
+  PARENTS
+  STAFF
+}

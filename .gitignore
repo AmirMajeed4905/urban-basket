@@ -1,0 +1,77 @@
+
+# =========================
+# Dependencies
+# =========================
+node_modules/
+
+# =========================
+# Build outputs
+# =========================
+dist/
+build/
+out/
+.next/
+.nuxt/
+coverage/
+
+# =========================
+# Environment files
+# =========================
+.env
+.env.*
+!.env.example
+
+# =========================
+# Logs
+# =========================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo
+
+# =========================
+# Frontend (React/Vite/Next)
+# =========================
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/.vite/
+
+# =========================
+# Backend (Node/Express)
+# =========================
+backend/dist/
+backend/build/
+server/dist/
+server/build/
+
+# =========================
+# Prisma (if used)
+# =========================
+prisma/migrations/
+prisma/dev.db
+
+# =========================
+# Temporary files
+# =========================
+tmp/
+temp/
