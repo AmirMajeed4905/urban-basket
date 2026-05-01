@@ -1,8 +1,10 @@
 import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 
+const API_URL = "https://ems-xfaa.onrender.com/api";
+
 const api = axios.create({
-  baseURL:https://ems-xfaa.onrender.com/,
+  baseURL: API_URL,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -12,7 +14,6 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const state = useAuthStore.getState();
 
-  // wait for zustand hydration
   if (!state.hydrated) return config;
 
   const token = state.accessToken;
@@ -29,12 +30,19 @@ let isRefreshing = false;
 let queue: any[] = [];
 
 const processQueue = (error: any, token: string | null = null) => {
-  queue.forEach((p) => (error ? p.reject(error) : p.resolve(token)));
+  queue.forEach((p) => {
+    if (error) {
+      p.reject(error);
+    } else {
+      p.resolve(token);
+    }
+  });
+
   queue = [];
 };
 
 api.interceptors.response.use(
-  (res) => res,
+  (response) => response,
   async (error) => {
     const original = error.config;
 
@@ -53,14 +61,18 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          `${https://ems-xfaa.onrender.com/}/auth/refresh`,
+          `${API_URL}/auth/refresh`,
           {},
-          { withCredentials: true }
+          {
+            withCredentials: true,
+          }
         );
 
         const newToken = res.data?.data?.accessToken;
 
-        if (!newToken) throw new Error("No token");
+        if (!newToken) {
+          throw new Error("No token received");
+        }
 
         useAuthStore.getState().setAccessToken(newToken);
 
