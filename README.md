@@ -1,30 +1,54 @@
 <div align="center">
 
-<br />
+<br/>
 
-<img src="https://img.shields.io/badge/BEST%20ERP-School%20Management%20System-0F6E56?style=for-the-badge&logoColor=white" alt="BEST ERP" height="40"/>
+<img src="https://img.shields.io/badge/BEST-ERP%20System-0F6E56?style=for-the-badge&logoColor=white" height="36" alt="BEST ERP"/>
 
-<br /><br />
+<h1>🏫 BEST International School ERP</h1>
 
-# 🏫 BEST International School — ERP System
+<p>A modern, full-stack School Management System built for<br/><strong>BEST International School, Bahawalnagr.</strong></p>
 
-**A modern, full-stack School ERP built for BEST International School, Bahawalnagr.**
-Digitize, streamline, and manage your entire school — students, staff, fees, attendance, and beyond.
+<p>
+  <a href="https://ems-bahawalnagr.vercel.app/login">
+    <img src="https://img.shields.io/badge/🌐_Live_Demo-Visit_Now-1D9E75?style=for-the-badge" alt="Live Demo"/>
+  </a>
+  &nbsp;
+  <a href="https://github.com/AmirMajeed4905/ems">
+    <img src="https://img.shields.io/badge/GitHub-Source_Code-181717?style=for-the-badge&logo=github&logoColor=white" alt="GitHub"/>
+  </a>
+  &nbsp;
+  <a href="https://www.typescriptlang.org/">
+    <img src="https://img.shields.io/badge/TypeScript-99.3%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript"/>
+  </a>
+  &nbsp;
+  <a href="https://vercel.com">
+    <img src="https://img.shields.io/badge/Deployed_on-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white" alt="Vercel"/>
+  </a>
+</p>
 
-<br />
+<br/>
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Now-1D9E75?style=for-the-badge)](https://ems-bahawalnagr.vercel.app/login)
+![Next.js](https://img.shields.io/badge/Next.js_14-black?style=flat-square&logo=next.js)
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=flat-square&logo=node.js&logoColor=white)
+![Express](https://img.shields.io/badge/Express.js-404D59?style=flat-square)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white)
+![MIT License](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)
 
-[![GitHub Repo](https://img.shields.io/badge/Source%20Code-GitHub-181717?style=for-the-badge&logo=github)](https://github.com/AmirMajeed4905/ems)
+</div>
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-99%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+---
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=for-the-badge&logo=vercel)](https://vercel.com)
 ## 📸 Screenshots
+
+<div align="center">
 
 ![Dashboard](https://github.com/user-attachments/assets/3584b827-5779-4b4a-b5ed-64dfc0c5f2ab)
 
 ![Login](https://github.com/user-attachments/assets/58259b12-b6c4-4c11-b12b-644ba3a1f1d2)
+
+<details>
+<summary><b>📷 View More Screenshots</b></summary>
+<br/>
 
 ![Page 3](https://github.com/user-attachments/assets/fd636ee4-30fa-46fb-ad30-7cc3f5ed9338)
 
@@ -33,26 +57,17 @@ Digitize, streamline, and manage your entire school — students, staff, fees, a
 ![Page 5](https://github.com/user-attachments/assets/b7718400-2eb7-40ef-905d-c5a788604c79)
 
 ![Page 6](https://github.com/user-attachments/assets/a2a2428c-60be-4cdf-b4aa-dead9fe274d1)
-<br />
+
+</details>
 
 </div>
 
 ---
 
-## 📸 Preview
-
-> 🔗 **Live System:** [ems-bahawalnagr.vercel.app/login](https://ems-bahawalnagr.vercel.app/login)
-
-> _(Add a screenshot here: `![Dashboard](./screenshots/dashboard.png)`)_
-
----
-
 ## ✨ Features
 
-The **BEST ERP** is a centralized school management platform that eliminates paperwork and gives administrators, teachers, and staff one powerful interface to run the entire school.
-
 | Module | Description |
-|---|---|
+|:---|:---|
 | 🔐 **Authentication** | Secure role-based login for Admin, Staff & Teachers |
 | 👨‍🎓 **Student Management** | Enroll, update & track complete student records |
 | 👨‍🏫 **Employee Management** | Manage staff profiles, roles & departments |
@@ -66,12 +81,12 @@ The **BEST ERP** is a centralized school management platform that eliminates pap
 
 ## 🛠️ Tech Stack
 
-```
-Frontend     →   Next.js 14  ·  TypeScript  ·  Tailwind CSS
-Backend      →   Node.js  ·  Express.js
-Language     →   TypeScript (99.3%)
-Deployment   →   Vercel
-```
+| Layer | Technologies |
+|:---|:---|
+| **Frontend** | Next.js 14, TypeScript, Tailwind CSS |
+| **Backend** | Node.js, Express.js |
+| **Language** | TypeScript (99.3%) |
+| **Deployment** | Vercel |
 
 ---
 
@@ -100,27 +115,27 @@ ems/
 
 ## 🚀 Local Setup Guide
 
-### ✅ Prerequisites
+### Prerequisites
 
 - [Node.js](https://nodejs.org/) v18+
 - npm or yarn
 - Git
 
-### 1. Clone the Repository
+### 1 — Clone the Repository
 
 ```bash
 git clone https://github.com/AmirMajeed4905/ems.git
 cd ems
 ```
 
-### 2. Setup Backend
+### 2 — Setup Backend
 
 ```bash
 cd backend
 npm install
 ```
 
-Create a `.env` file inside `backend/`:
+Create `.env` inside `backend/`:
 
 ```env
 PORT=5000
@@ -129,38 +144,34 @@ JWT_SECRET=your_secret_key
 NODE_ENV=development
 ```
 
-Start the backend:
-
 ```bash
 npm run dev
-# Runs on http://localhost:5000
+# ✅ Runs on http://localhost:5000
 ```
 
-### 3. Setup Frontend
+### 3 — Setup Frontend
 
 ```bash
 cd ../frontend
 npm install
 ```
 
-Create a `.env.local` file inside `frontend/`:
+Create `.env.local` inside `frontend/`:
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:5000
 ```
 
-Start the frontend:
-
 ```bash
 npm run dev
-# Runs on http://localhost:3000
+# ✅ Runs on http://localhost:3000
 ```
 
 ---
 
 ## 🌍 Deployment
 
-The frontend is deployed on **Vercel**. To deploy your own instance:
+Frontend is deployed on **Vercel**:
 
 ```bash
 npm install -g vercel
@@ -168,19 +179,17 @@ cd frontend
 vercel
 ```
 
-For the backend, you can use **Railway**, **Render**, or any Node.js host.
+Backend can be hosted on **Railway** or **Render**.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions, issues and feature requests are welcome!
-
 ```bash
 git checkout -b feature/your-feature
 git commit -m "feat: add your feature"
 git push origin feature/your-feature
-# Then open a Pull Request
+# Open a Pull Request on GitHub
 ```
 
 ---
@@ -191,7 +200,7 @@ git push origin feature/your-feature
 
 **Amir Majeed**
 
-[![GitHub](https://img.shields.io/badge/GitHub-@AmirMajeed4905-181717?style=flat-square&logo=github)](https://github.com/AmirMajeed4905)
+[![GitHub](https://img.shields.io/badge/GitHub-@AmirMajeed4905-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/AmirMajeed4905)
 
 </div>
 
@@ -199,7 +208,7 @@ git push origin feature/your-feature
 
 ## 📄 License
 
-This project is licensed under the **MIT License**.
+This project is licensed under the **[MIT License](LICENSE)**.
 
 ---
 
@@ -207,6 +216,6 @@ This project is licensed under the **MIT License**.
 
 Made with ❤️ for **BEST International School, Bahawalnagr**
 
-⭐ *Agar yeh project helpful laga toh ek star zaroor dein!* ⭐
+*⭐ Agar yeh project pasand aaya toh ek star zaroor dein! ⭐*
 
 </div>
