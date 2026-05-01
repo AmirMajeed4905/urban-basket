@@ -2,7 +2,7 @@ import axios from "axios";
 import { useAuthStore } from "@/store/authStore";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL:https://ems-xfaa.onrender.com/,
   withCredentials: true,
   headers: {
     "Content-Type": "application/json",
@@ -53,7 +53,7 @@ api.interceptors.response.use(
 
       try {
         const res = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`,
+          `${https://ems-xfaa.onrender.com/}/auth/refresh`,
           {},
           { withCredentials: true }
         );
