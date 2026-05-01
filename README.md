@@ -41,6 +41,7 @@
 ## 📸 Screenshots
 
 <div align="center">
+![Page 6](https://github.com/user-attachments/assets/a2a2428c-60be-4cdf-b4aa-dead9fe274d1)
 
 ![Dashboard](https://github.com/user-attachments/assets/3584b827-5779-4b4a-b5ed-64dfc0c5f2ab)
 
@@ -56,7 +57,6 @@
 
 ![Page 5](https://github.com/user-attachments/assets/b7718400-2eb7-40ef-905d-c5a788604c79)
 
-![Page 6](https://github.com/user-attachments/assets/a2a2428c-60be-4cdf-b4aa-dead9fe274d1)
 
 </details>
 
