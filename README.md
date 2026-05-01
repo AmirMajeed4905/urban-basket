@@ -41,22 +41,24 @@
 ## 📸 Screenshots
 
 <div align="center">
-![Page 6](https://github.com/user-attachments/assets/a2a2428c-60be-4cdf-b4aa-dead9fe274d1)
 
+### 🔐 Login Page
+![Login Page](https://github.com/user-attachments/assets/a2a2428c-60be-4cdf-b4aa-dead9fe274d1)
+
+### 📊 Dashboard
 ![Dashboard](https://github.com/user-attachments/assets/3584b827-5779-4b4a-b5ed-64dfc0c5f2ab)
-
-![Login](https://github.com/user-attachments/assets/58259b12-b6c4-4c11-b12b-644ba3a1f1d2)
 
 <details>
 <summary><b>📷 View More Screenshots</b></summary>
 <br/>
+
+![Page 2](https://github.com/user-attachments/assets/58259b12-b6c4-4c11-b12b-644ba3a1f1d2)
 
 ![Page 3](https://github.com/user-attachments/assets/fd636ee4-30fa-46fb-ad30-7cc3f5ed9338)
 
 ![Page 4](https://github.com/user-attachments/assets/98255d6c-360f-4211-a8a5-b0b7e71cdce2)
 
 ![Page 5](https://github.com/user-attachments/assets/b7718400-2eb7-40ef-905d-c5a788604c79)
-
 
 </details>
 
