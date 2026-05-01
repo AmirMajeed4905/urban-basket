@@ -3,13 +3,14 @@ import { ApiError } from "../utils/ApiError";
 import { CreateFeeStructureInput, CollectFeeInput } from "../validators/fee.validator";
 import { FeeStatus } from "@prisma/client";
 
-// ─── Create Fee Structure ─────────────────────────────────────────────────────
+/* =========================================================
+   CREATE FEE STRUCTURE
+========================================================= */
 
 export const createFeeStructureService = async (
   data: CreateFeeStructureInput,
   createdById: string
 ) => {
-  // Validate class and academic year exist
   const [classExists, yearExists] = await Promise.all([
     prisma.class.findUnique({ where: { id: data.classId } }),
     prisma.academicYear.findUnique({ where: { id: data.academicYearId } }),
@@ -18,7 +19,6 @@ export const createFeeStructureService = async (
   if (!classExists) throw new ApiError(404, "Class not found");
   if (!yearExists) throw new ApiError(404, "Academic year not found");
 
-  // Check duplicate fee structure for same class + year + name
   const duplicate = await prisma.feeStructure.findFirst({
     where: {
       name: data.name,
@@ -26,86 +26,80 @@ export const createFeeStructureService = async (
       academicYearId: data.academicYearId,
     },
   });
+
   if (duplicate) {
-    throw new ApiError(409, "A fee structure with this name already exists for this class and year");
+    throw new ApiError(409, "Fee structure already exists");
   }
 
   return prisma.feeStructure.create({
     data: {
-      name: data.name,
-      classId: data.classId,
-      academicYearId: data.academicYearId,
-      amount: data.amount,
-      dueDay: data.dueDay,
-      lateFine: data.lateFine,
+      ...data,
       createdById,
     },
     include: {
-      class: { select: { id: true, name: true, section: true } },
-      academicYear: { select: { id: true, name: true } },
+      class: true,
+      academicYear: true,
     },
   });
 };
 
-// ─── Get Fee Structures ───────────────────────────────────────────────────────
+/* =========================================================
+   GET FEE STRUCTURES
+========================================================= */
 
-export const getFeeStructuresService = async (classId?: string, academicYearId?: string) => {
+export const getFeeStructuresService = async (
+  classId?: string,
+  academicYearId?: string
+) => {
   return prisma.feeStructure.findMany({
     where: {
       ...(classId && { classId }),
       ...(academicYearId && { academicYearId }),
     },
     include: {
-      class: { select: { id: true, name: true, section: true } },
-      academicYear: { select: { id: true, name: true } },
+      class: true,
+      academicYear: true,
     },
-    orderBy: [{ class: { name: "asc" } }, { createdAt: "desc" }],
+    orderBy: { createdAt: "desc" },
   });
 };
 
-// ─── Collect Fee ──────────────────────────────────────────────────────────────
+/* =========================================================
+   COLLECT FEE
+========================================================= */
 
-export const collectFeeService = async (data: CollectFeeInput, recordedById: string) => {
-  // Fetch student and fee structure together
+export const collectFeeService = async (
+  data: CollectFeeInput,
+  recordedById: string
+) => {
   const [student, feeStructure] = await Promise.all([
     prisma.student.findUnique({
       where: { id: data.studentId },
-      include: { class: { select: { id: true, name: true, section: true } } },
+      include: { class: true },
     }),
     prisma.feeStructure.findUnique({
       where: { id: data.feeStructureId },
-      include: { class: { select: { id: true, name: true, section: true } } },
     }),
   ]);
 
   if (!student) throw new ApiError(404, "Student not found");
   if (!feeStructure) throw new ApiError(404, "Fee structure not found");
 
-  // ✅ FIX: Class mismatch check — student class must match fee structure class
   if (student.classId !== feeStructure.classId) {
-    throw new ApiError(
-      400,
-      `Class mismatch: Student is in ${student.class.name}-${student.class.section} but fee structure is for ${feeStructure.class.name}-${feeStructure.class.section}`
-    );
+    throw new ApiError(400, "Class mismatch");
   }
 
-  // ✅ FIX: Correct amount calculation
-  // amountDue = base amount + late fine - discount
-  const baseAmount = Number(feeStructure.amount);
-  const lateFine = Number(feeStructure.lateFine);
-  const discount = Number(data.discount);
-  const amountDue = Math.max(0, baseAmount + lateFine - discount);
+  const base = Number(feeStructure.amount || 0);
+  const lateFine = Number(feeStructure.lateFine || 0);
+  const discount = Number(data.discount || 0);
 
-  // Determine status
-  const amountPaid = Number(data.amountPaid);
+  const amountDue = Math.max(0, base + lateFine - discount);
+  const paid = Number(data.amountPaid || 0);
+
   let status: FeeStatus;
-  if (amountPaid <= 0) {
-    status = FeeStatus.UNPAID;
-  } else if (amountPaid >= amountDue) {
-    status = FeeStatus.PAID;
-  } else {
-    status = FeeStatus.PARTIAL;
-  }
+  if (paid <= 0) status = FeeStatus.UNPAID;
+  else if (paid >= amountDue) status = FeeStatus.PAID;
+  else status = FeeStatus.PARTIAL;
 
   const paidAt = status === FeeStatus.PAID ? new Date() : null;
 
@@ -118,10 +112,9 @@ export const collectFeeService = async (data: CollectFeeInput, recordedById: str
         year: data.year,
       },
     },
-    // ✅ FIX: update also recalculates amountDue
     update: {
       amountDue,
-      amountPaid,
+      amountPaid: paid,
       discount,
       lateFine,
       status,
@@ -136,7 +129,7 @@ export const collectFeeService = async (data: CollectFeeInput, recordedById: str
       month: data.month,
       year: data.year,
       amountDue,
-      amountPaid,
+      amountPaid: paid,
       discount,
       lateFine,
       status,
@@ -151,52 +144,37 @@ export const collectFeeService = async (data: CollectFeeInput, recordedById: str
           id: true,
           name: true,
           rollNo: true,
-          class: { select: { name: true, section: true } },
+          class: true,
         },
       },
-      feeStructure: { select: { id: true, name: true, amount: true } },
+      feeStructure: true,
     },
   });
 };
 
-// ─── Student Fee History ──────────────────────────────────────────────────────
+/* =========================================================
+   STUDENT FEE HISTORY
+========================================================= */
 
 export const getStudentFeeHistoryService = async (studentId: string) => {
   const student = await prisma.student.findUnique({
     where: { id: studentId },
-    select: {
-      id: true,
-      name: true,
-      rollNo: true,
-      class: { select: { name: true, section: true } },
-    },
   });
+
   if (!student) throw new ApiError(404, "Student not found");
 
-  const payments = await prisma.feePayment.findMany({
+  return prisma.feePayment.findMany({
     where: { studentId },
     include: {
-      feeStructure: {
-        select: { id: true, name: true, amount: true },
-      },
+      feeStructure: true,
     },
     orderBy: [{ year: "desc" }, { month: "desc" }],
   });
-
-  // Calculate totals for this student
-  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amountPaid), 0);
-  const totalDue = payments.reduce((sum, p) => sum + Number(p.amountDue), 0);
-  const totalDiscount = payments.reduce((sum, p) => sum + Number(p.discount), 0);
-  const balance = totalDue - totalPaid;
-
-  return {
-    student,
-    payments,
-    summary: { totalPaid, totalDue, totalDiscount, balance },
-  };
 };
 
-// ─── Defaulters ───────────────────────────────────────────────────────────────
+/* =========================================================
+   DEFAULTERS
+========================================================= */
 
 export const getDefaultersService = async (
   month: number,
@@ -207,63 +185,82 @@ export const getDefaultersService = async (
     where: {
       month,
       year,
-      status: { in: [FeeStatus.UNPAID, FeeStatus.PARTIAL] },
+      status: {
+        in: [FeeStatus.UNPAID, FeeStatus.PARTIAL],
+      },
       ...(classId && { student: { classId } }),
     },
     include: {
       student: {
-        select: {
-          id: true,
-          name: true,
-          rollNo: true,
-          fatherPhone: true,
-          class: { select: { id: true, name: true, section: true } },
+        include: {
+          class: true,
         },
       },
-      feeStructure: {
-        select: { id: true, name: true, amount: true },
-      },
+      feeStructure: true,
     },
-    orderBy: { student: { name: "asc" } },
+    orderBy: { createdAt: "desc" },
   });
 };
 
-// ─── Fee Stats ────────────────────────────────────────────────────────────────
+/* =========================================================
+   FEE STATS (DASHBOARD)
+========================================================= */
 
 export const getFeeStatsService = async (month: number, year: number) => {
-  // Run all queries in parallel
-  const [countResults, collectedResult, expectedResult] = await Promise.all([
-    // Count by status
-    prisma.$transaction([
-      prisma.feePayment.count({ where: { month, year } }),
-      prisma.feePayment.count({ where: { month, year, status: FeeStatus.PAID } }),
-      prisma.feePayment.count({ where: { month, year, status: FeeStatus.UNPAID } }),
-      prisma.feePayment.count({ where: { month, year, status: FeeStatus.PARTIAL } }),
-    ]),
-    // Total collected (paid + partial)
-    prisma.feePayment.aggregate({
-      where: { month, year, status: { in: [FeeStatus.PAID, FeeStatus.PARTIAL] } },
-      _sum: { amountPaid: true },
-    }),
-    // Total expected (amountDue of all records)
-    prisma.feePayment.aggregate({
+  const [students, payments] = await Promise.all([
+    prisma.student.count({ where: { status: "ACTIVE" } }),
+
+    prisma.feePayment.findMany({
       where: { month, year },
-      _sum: { amountDue: true },
     }),
   ]);
 
-  const [total, paid, unpaid, partial] = countResults;
-  const totalCollected = Number(collectedResult._sum.amountPaid ?? 0);
-  const totalExpected = Number(expectedResult._sum.amountDue ?? 0);
-  const totalPending = totalExpected - totalCollected;
+  const totalStudents = students;
+
+  const totalCollected = payments.reduce(
+    (sum, p) => sum + Number(p.amountPaid || 0),
+    0
+  );
+
+  const totalExpected = payments.reduce(
+    (sum, p) => sum + Number(p.amountDue || 0),
+    0
+  );
+
+  const paid = payments.filter(p => p.status === "PAID").length;
+  const unpaid = payments.filter(p => p.status === "UNPAID").length;
+  const partial = payments.filter(p => p.status === "PARTIAL").length;
 
   return {
-    total,
+    total: totalStudents,
     paid,
     unpaid,
     partial,
     totalCollected,
     totalExpected,
-    totalPending,
+    totalPending: totalExpected - totalCollected,
   };
+};
+
+/* =========================================================
+   MONTHLY STATS (DASHBOARD GRAPH)
+========================================================= */
+
+export const getMonthlyFeeStatsService = async (year: number) => {
+  const data = await prisma.feePayment.groupBy({
+    by: ["month"],
+    where: { year },
+    _sum: {
+      amountPaid: true,
+      amountDue: true,
+    },
+  });
+
+  return data.map((item) => ({
+    month: item.month,
+    collected: Number(item._sum.amountPaid || 0),
+    pending:
+      Number(item._sum.amountDue || 0) -
+      Number(item._sum.amountPaid || 0),
+  }));
 };

@@ -7,11 +7,11 @@ import {
   GraduationCap,
   Users,
   DollarSign,
-  Bell,
-  TrendingUp,
-  UserCheck,
-  BookOpen,
   AlertCircle,
+  TrendingUp,
+  BookOpen,
+  Bell,
+  UserCheck,
 } from "lucide-react";
 import api from "@/lib/axios";
 import { formatCurrency, getMonthName } from "@/lib/utils";
@@ -28,74 +28,59 @@ import {
   Cell,
 } from "recharts";
 
-/* ================= TYPES ================= */
-
-type StudentStats = {
-  active: number;
-  boys: number;
-  girls: number;
-};
-
-type StaffStats = {
-  total: number;
-  teachers: number;
-};
-
-type FeeStats = {
-  totalCollected: number;
-  paid: number;
-  unpaid: number;
-};
-
-/* ================= STATIC DATA ================= */
-
-const feeMonths = [
-  { month: "Jan", collected: 420000, pending: 80000 },
-  { month: "Feb", collected: 480000, pending: 60000 },
-  { month: "Mar", collected: 510000, pending: 40000 },
-  { month: "Apr", collected: 495000, pending: 55000 },
-  { month: "May", collected: 530000, pending: 30000 },
-];
-
-const attendancePie = [
-  { name: "Present", value: 87, color: "#10b981" },
-  { name: "Absent", value: 8, color: "#ef4444" },
-  { name: "Late", value: 5, color: "#f59e0b" },
-];
-
 /* ================= COMPONENT ================= */
 
 export default function DashboardPage() {
   const curMonth = new Date().getMonth() + 1;
   const curYear = new Date().getFullYear();
 
+  /* ================= SAFE API WRAPPER ================= */
+
+  const fetcher = async (url: string) => {
+    const res = await api.get(url);
+    return res.data?.data ?? res.data;
+  };
+
   /* ================= QUERIES ================= */
 
-  const { data: studentStats } = useQuery<StudentStats>({
+  const { data: studentStats } = useQuery({
     queryKey: ["student-stats"],
-    queryFn: async () => {
-      const res = await api.get("/students/stats");
-      return res.data.data;
-    },
+    queryFn: () => fetcher("/students/stats"),
   });
 
-  const { data: staffStats } = useQuery<StaffStats>({
+  const { data: staffStats } = useQuery({
     queryKey: ["staff-stats"],
-    queryFn: async () => {
-      const res = await api.get("/staff/stats");
-      return res.data.data;
-    },
+    queryFn: () => fetcher("/staff/stats"),
   });
 
-  const { data: feeStats } = useQuery<FeeStats>({
+  const { data: feeStats } = useQuery({
     queryKey: ["fee-stats", curMonth, curYear],
-    queryFn: async () => {
-      const res = await api.get(
-        `/fees/stats?month=${curMonth}&year=${curYear}`
-      );
-      return res.data.data;
-    },
+    queryFn: () =>
+      fetcher(`/fees/stats?month=${curMonth}&year=${curYear}`),
   });
+
+  const { data: defaulters } = useQuery({
+    queryKey: ["defaulters", curMonth, curYear],
+    queryFn: () =>
+      fetcher(`/fees/defaulters?month=${curMonth}&year=${curYear}`),
+  });
+
+  const { data: feeMonths } = useQuery({
+    queryKey: ["fee-monthly"],
+    queryFn: () => fetcher("/fees/monthly-stats"),
+  });
+
+  /* ================= SAFE FALLBACKS ================= */
+
+  const students = studentStats || {};
+  const staff = staffStats || {};
+  const fees = feeStats || {};
+
+  const attendancePie = [
+    { name: "Present", value: 87, color: "#10b981" },
+    { name: "Absent", value: 8, color: "#ef4444" },
+    { name: "Late", value: 5, color: "#f59e0b" },
+  ];
 
   /* ================= UI ================= */
 
@@ -103,149 +88,147 @@ export default function DashboardPage() {
     <div>
       <Header
         title="Dashboard"
-        subtitle={`Welcome to BEST ERP — ${getMonthName(curMonth)} ${curYear}`}
+        subtitle={`Welcome — ${getMonthName(curMonth)} ${curYear}`}
       />
 
       <div className="p-6 space-y-6">
-        {/* Stat Cards */}
+
+        {/* ================= STATS ================= */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+
           <StatCard
             title="Total Students"
-            value={studentStats?.active ?? "—"}
-            subtitle={`${studentStats?.boys ?? 0} boys · ${studentStats?.girls ?? 0} girls`}
+            value={students.active ?? 0}
+            subtitle={`${students.boys ?? 0} boys · ${students.girls ?? 0} girls`}
             icon={<GraduationCap size={22} />}
             color="linear-gradient(135deg,#1a56db,#1e3a8a)"
-            delay={1}
           />
 
           <StatCard
             title="Total Staff"
-            value={staffStats?.total ?? "—"}
-            subtitle={`${staffStats?.teachers ?? 0} teachers`}
+            value={staff.total ?? 0}
+            subtitle={`${staff.teachers ?? 0} teachers`}
             icon={<Users size={22} />}
             color="linear-gradient(135deg,#7c3aed,#5b21b6)"
-            delay={2}
           />
 
           <StatCard
             title="Fee Collected"
-            value={
-              feeStats
-                ? formatCurrency(Number(feeStats.totalCollected))
-                : "—"
-            }
-            subtitle={`${feeStats?.paid ?? 0} paid · ${feeStats?.unpaid ?? 0} pending`}
+            value={formatCurrency(fees.totalCollected ?? 0)}
+            subtitle={`Expected: ${formatCurrency(fees.totalExpected ?? 0)}`}
             icon={<DollarSign size={22} />}
             color="linear-gradient(135deg,#10b981,#059669)"
-            delay={3}
           />
 
           <StatCard
             title="Defaulters"
-            value={feeStats?.unpaid ?? "—"}
-            subtitle="This month"
+            value={defaulters?.length ?? fees.unpaid ?? 0}
+            subtitle={`Pending: ${formatCurrency(fees.totalPending ?? 0)}`}
             icon={<AlertCircle size={22} />}
             color="linear-gradient(135deg,#f97316,#ea580c)"
-            delay={4}
           />
         </div>
 
-        {/* Charts */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          {/* Fee Chart */}
-          <div className="xl:col-span-2 bg-white rounded-2xl shadow-card p-5">
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="font-bold text-slate-800">
-                  Fee Collection
-                </h3>
-                <p className="text-slate-400 text-sm">
-                  Monthly overview
-                </p>
-              </div>
-              <TrendingUp size={18} className="text-blue-500" />
-            </div>
+        {/* ================= CHARTS ================= */}
+       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        
 
-            <ResponsiveContainer width="100%" height={200}>
-              <AreaChart data={feeMonths}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
+  {/* Fee Chart */}
+  <div className="xl:col-span-2 bg-white rounded-2xl shadow-card p-5">
+    <div className="flex items-center gap-2 mb-4">
+      <TrendingUp size={18} />
+      <h3 className="font-bold">Fee Collection</h3>
+    </div>
 
-                <Area
-                  type="monotone"
-                  dataKey="collected"
-                  stroke="#1a56db"
-                  fillOpacity={0.1}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="pending"
-                  stroke="#f97316"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
+    <ResponsiveContainer width="100%" height={240}>
+      <AreaChart data={feeMonths ?? []}>
+        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
 
-          {/* Pie */}
-          <div className="bg-white rounded-2xl shadow-card p-5">
-            <h3 className="font-bold mb-3">Attendance</h3>
+        <XAxis
+          dataKey="month"
+          tick={{ fontSize: 12 }}
+        />
 
-            <ResponsiveContainer width="100%" height={160}>
-              <PieChart>
-                <Pie data={attendancePie} dataKey="value">
-                  {attendancePie.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(v: number) => `${v}%`} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        <YAxis
+          tick={{ fontSize: 12 }}
+        />
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            {
-              icon: BookOpen,
-              label: "Active Classes",
-              value: "—",
-              color: "#1a56db",
-            },
-            {
-              icon: Bell,
-              label: "Active Notices",
-              value: "—",
-              color: "#f97316",
-            },
-            {
-              icon: UserCheck,
-              label: "Present Today",
-              value: `${studentStats?.active ?? 0}`,
-              color: "#10b981",
-            },
-          ].map(({ icon: Icon, label, value, color }) => (
-            <div
-              key={label}
-              className="bg-white rounded-2xl shadow-card p-4 flex items-center gap-4"
-            >
-              <div
-                className="w-11 h-11 rounded-xl flex items-center justify-center"
-                style={{ background: `${color}18` }}
-              >
-                <Icon size={20} style={{ color }} />
-              </div>
+        <Tooltip
+          contentStyle={{
+            borderRadius: 10,
+            fontSize: 13,
+          }}
+        />
 
-              <div>
-                <p className="text-slate-500 text-sm">{label}</p>
-                <p className="text-xl font-bold text-slate-800">
-                  {value}
-                </p>
-              </div>
-            </div>
+        {/* COLLECTED */}
+        <Area
+          type="monotone"
+          dataKey="collected"
+          stroke="#1a56db"
+          fill="#1a56db"
+          fillOpacity={0.15}
+          strokeWidth={2}
+        />
+
+        {/* PENDING */}
+        <Area
+          type="monotone"
+          dataKey="pending"
+          stroke="#f97316"
+          fill="#f97316"
+          fillOpacity={0.15}
+          strokeWidth={2}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  </div>
+
+  {/* Attendance */}
+  <div className="bg-white rounded-2xl shadow-card p-5">
+    <h3 className="font-bold mb-3">Attendance</h3>
+
+    <ResponsiveContainer width="100%" height={200}>
+      <PieChart>
+        <Pie
+          data={attendancePie ?? []}
+          dataKey="value"
+          nameKey="name"
+          outerRadius={80}
+          label
+        >
+          {attendancePie?.map((e, i) => (
+            <Cell key={i} fill={e.color} />
           ))}
+        </Pie>
+
+        <Tooltip />
+      </PieChart>
+    </ResponsiveContainer>
+  </div>
+
+</div>
+
+        {/* ================= QUICK ================= */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+          <div className="bg-amber-200 p-4 rounded-xl shadow">
+            <BookOpen />
+            <p>Active Classes</p>
+            <h2>10</h2>
+          </div>
+
+          <div className="bg-blue-100 p-4 rounded-xl shadow">
+            <Bell />
+            <p>Notices</p>
+            <h2>20</h2>
+          </div>
+
+          <div className="bg-green-100 p-4 rounded-xl shadow">
+            <UserCheck />
+            <p>Present Today</p>
+            <h2>{students.active ?? 0}</h2>
+          </div>
+
         </div>
       </div>
     </div>

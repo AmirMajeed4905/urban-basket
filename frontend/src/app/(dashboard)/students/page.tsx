@@ -25,6 +25,8 @@ export default function StudentsPage() {
     queryFn: () => api.get("/students/stats").then((r) => r.data.data),
   });
 
+  
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/students/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["students"] }),

@@ -24,7 +24,7 @@ export default function StudentProfilePage() {
 
   const { data: feeHistory } = useQuery({
     queryKey: ["student-fees", id],
-    queryFn: () => api.get(`/fees/student/${id}`).then((r) => r.data.data),
+    queryFn: () => api.get(`/fees/student/${id}`).then((r) => r.data.data.payments),
     enabled: activeTab === "fees",
   });
 
