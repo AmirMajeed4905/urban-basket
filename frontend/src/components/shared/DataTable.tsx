@@ -3,7 +3,7 @@
 import { Search, ChevronLeft, ChevronRight, MoreHorizontal } from "lucide-react";
 
 interface Column<T> {
-  key: string;
+  key: keyof T | string;
   label: string;
   render?: (row: T) => React.ReactNode;
 }
@@ -18,12 +18,10 @@ interface DataTableProps<T> {
   totalPages?: number;
   onPrev?: () => void;
   onNext?: () => void;
-  onPage?: (p: number) => void; // optional: direct page jump
+  onPage?: (p: number) => void;
   actions?: React.ReactNode;
 }
 
-// ── Smart page number generator ───────────────────────────────────────────────
-// Returns array of page numbers + null (for "…" gaps)
 function getPageNumbers(current: number, total: number): (number | null)[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
 
@@ -56,11 +54,12 @@ export default function DataTable<T extends { id: string }>({
   const pageNums = getPageNumbers(page, totalPages);
 
   return (
-    <div className="bg-white rounded-2xl shadow-card overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-card overflow-hidden w-full">
 
       {/* ── Toolbar ─────────────────────────────────────────────────────── */}
       {(onSearch || actions) && (
-        <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+
           {onSearch && (
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full sm:w-auto sm:min-w-[220px]">
               <Search size={15} className="text-slate-400 shrink-0" />
@@ -72,20 +71,25 @@ export default function DataTable<T extends { id: string }>({
               />
             </div>
           )}
+
           {actions && (
-            <div className="flex items-center gap-2 ml-auto">{actions}</div>
+            <div className="flex items-center gap-2 ml-auto">
+              {actions}
+            </div>
           )}
         </div>
       )}
 
-      {/* ── Table (scrollable on small screens) ─────────────────────────── */}
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[560px]">
+      {/* ── Table ─────────────────────────────────────────────────────── */}
+      <div className="w-full overflow-x-auto">
+
+        <table className="w-full min-w-[700px]">
+
           <thead>
             <tr className="bg-slate-50 border-b border-slate-100">
               {columns.map((col) => (
                 <th
-                  key={col.key}
+                  key={String(col.key)}
                   className="px-4 sm:px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap"
                 >
                   {col.label}
@@ -95,11 +99,12 @@ export default function DataTable<T extends { id: string }>({
           </thead>
 
           <tbody className="divide-y divide-slate-50">
+
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
                   {columns.map((col) => (
-                    <td key={col.key} className="px-4 sm:px-5 py-3">
+                    <td key={String(col.key)} className="px-4 sm:px-5 py-3">
                       <div className="h-4 bg-slate-100 rounded animate-pulse w-24" />
                     </td>
                   ))}
@@ -122,10 +127,12 @@ export default function DataTable<T extends { id: string }>({
                 >
                   {columns.map((col) => (
                     <td
-                      key={col.key}
-                      className="px-4 sm:px-5 py-3.5 text-sm text-slate-700"
+                      key={String(col.key)}
+                      className="px-4 sm:px-5 py-3.5 text-sm text-slate-700 whitespace-nowrap"
                     >
-                      {col.render ? col.render(row) : (row as any)[col.key]}
+                      {col.render
+                        ? col.render(row)
+                        : (row as any)[col.key]}
                     </td>
                   ))}
                 </tr>
@@ -137,31 +144,25 @@ export default function DataTable<T extends { id: string }>({
 
       {/* ── Pagination ───────────────────────────────────────────────────── */}
       {totalPages >= 1 && (
-        <div className="px-4 sm:px-5 py-3.5 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-4 sm:px-5 py-3.5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
 
-          {/* Page info — hidden on very small screens */}
           <p className="text-xs text-slate-400 hidden sm:block">
             Page <span className="font-semibold text-slate-600">{page}</span> of{" "}
             <span className="font-semibold text-slate-600">{totalPages}</span>
           </p>
 
-          {/* Numbered pages */}
-          <div className="flex items-center gap-1 mx-auto sm:mx-0">
+          <div className="flex flex-wrap items-center justify-center gap-1">
 
-            {/* Prev */}
             <button
               onClick={onPrev}
               disabled={page <= 1}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              aria-label="Previous page"
+              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
             >
-              <ChevronLeft size={15} className="text-slate-600" />
+              <ChevronLeft size={15} />
             </button>
 
-            {/* Page numbers */}
             {pageNums.map((num, idx) =>
               num === null ? (
-                // Ellipsis
                 <span
                   key={`gap-${idx}`}
                   className="w-8 h-8 flex items-center justify-center text-slate-400"
@@ -172,10 +173,9 @@ export default function DataTable<T extends { id: string }>({
                 <button
                   key={num}
                   onClick={() => onPage?.(num)}
-                  disabled={!onPage && num !== page}
-                  className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
+                  className={`w-8 h-8 rounded-lg text-xs font-semibold ${
                     num === page
-                      ? "text-white shadow-sm"
+                      ? "text-white"
                       : "border border-slate-200 text-slate-600 hover:bg-slate-50"
                   }`}
                   style={
@@ -183,22 +183,20 @@ export default function DataTable<T extends { id: string }>({
                       ? { background: "linear-gradient(135deg,#7c3aed,#5b21b6)" }
                       : {}
                   }
-                  aria-current={num === page ? "page" : undefined}
                 >
                   {num}
                 </button>
               )
             )}
 
-            {/* Next */}
             <button
               onClick={onNext}
               disabled={page >= totalPages}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-              aria-label="Next page"
+              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
             >
-              <ChevronRight size={15} className="text-slate-600" />
+              <ChevronRight size={15} />
             </button>
+
           </div>
         </div>
       )}
