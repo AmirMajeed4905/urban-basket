@@ -10,7 +10,7 @@ export default function LoadingScreen() {
         {/* Animated Logo */}
         <div className="relative">
           <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center shadow-xl animate-pulse">
-            <span className="text-white font-bold text-xl">ERP</span>
+            <span className="text-white font-bold text-xl">Education Management System ERP</span>
           </div>
 
           {/* Glow effect */}
@@ -26,7 +26,7 @@ export default function LoadingScreen() {
 
         {/* Text */}
         <p className="text-white/70 text-sm tracking-wider">
-          Loading BEST ERP System...
+          Loading Education Management System ERP...
         </p>
 
       </div>

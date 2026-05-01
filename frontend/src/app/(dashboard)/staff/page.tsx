@@ -342,9 +342,66 @@ export default function StaffPage() {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* inputs unchanged (same as yours) */}
-              {/* keep your existing inputs here */}
+              <div className="grid grid-cols-2 gap-4">
+              {[
+                { label: "Employee No", id: "employeeNo", placeholder: "EMP-001" },
+                { label: "Full Name",   id: "name",       placeholder: "Staff name" },
+                { label: "Phone",       id: "phone",      placeholder: "03xx-xxxxxxx" },
+                { label: "Email",       id: "email",      placeholder: "email@school.com", type: "email" },
+                { label: "Designation", id: "designation",placeholder: "e.g. Senior Teacher" },
+                { label: "Salary (PKR)",id: "salary",     placeholder: "25000", type: "number" },
+              ].map(({ label, id, placeholder, type = "text" }) => (
+                <div key={id} className={id === "designation" ? "col-span-2" : ""}>
+                  <label className="text-xs font-semibold text-slate-500 mb-1 block">
+                    {label}
+                  </label>
+                  <input
+                    type={type}
+                    placeholder={placeholder}
+                    value={(form as any)[id]}
+                    onChange={(e) => setForm((f) => ({ ...f, [id]: e.target.value }))}
+                    className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-500 transition"
+                  />
+                </div>
+              ))}
+
+              {/* Gender */}
+              <div>
+                <label className="text-xs font-semibold text-slate-500 mb-1 block">Gender</label>
+                <select
+                  value={form.gender}
+                  onChange={(e) => setForm((f) => ({ ...f, gender: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-500"
+                >
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                </select>
+              </div>
+
+              {/* Staff Type */}
+              <div>
+                <label className="text-xs font-semibold text-slate-500 mb-1 block">Staff Type</label>
+                <select
+                  value={form.staffType}
+                  onChange={(e) => setForm((f) => ({ ...f, staffType: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-500"
+                >
+                  {STAFF_TYPES.filter(Boolean).map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Join Date */}
+              <div>
+                <label className="text-xs font-semibold text-slate-500 mb-1 block">Join Date</label>
+                <input
+                  type="date"
+                  value={form.joinDate}
+                  onChange={(e) => setForm((f) => ({ ...f, joinDate: e.target.value }))}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-violet-500"
+                />
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 mt-6">
