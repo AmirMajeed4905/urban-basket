@@ -85,7 +85,7 @@
 
 | Layer | Technologies |
 |:---|:---|
-| **Frontend** | Next.js 14, TypeScript, Tailwind CSS |
+| **Frontend** | Next.js 16, TypeScript, Tailwind CSS |
 | **Backend** | Node.js, Express.js |
 | **Language** | TypeScript (99.3%) |
 | **Deployment** | Vercel |
@@ -218,6 +218,6 @@ This project is licensed under the **[MIT License](LICENSE)**.
 
 Made with ❤️ for **BEST International School, Bahawalnagr**
 
-*⭐ Agar yeh project pasand aaya toh ek star zaroor dein! ⭐*
+*⭐ if you like this project give me star. ! ⭐*
 
 </div>
