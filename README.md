@@ -13,11 +13,26 @@ Digitize, streamline, and manage your entire school — students, staff, fees, a
 
 <br />
 
-[![Live Demo](https://img.shields.io/badge/🌐%20Live%20Demo-Visit%20Now-1D9E75?style=for-the-badge)](https://ems-bahawalnagr.vercel.app/login)
-[![GitHub Repo](https://img.shields.io/badge/📁%20Source%20Code-GitHub-181717?style=for-the-badge&logo=github)](https://github.com/AmirMajeed4905/ems)
-[![TypeScript](https://img.shields.io/badge/TypeScript-99%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=for-the-badge&logo=vercel)](https://vercel.com)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Visit%20Now-1D9E75?style=for-the-badge)](https://ems-bahawalnagr.vercel.app/login)
 
+[![GitHub Repo](https://img.shields.io/badge/Source%20Code-GitHub-181717?style=for-the-badge&logo=github)](https://github.com/AmirMajeed4905/ems)
+
+[![TypeScript](https://img.shields.io/badge/TypeScript-99%25-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=for-the-badge&logo=vercel)](https://vercel.com)
+## 📸 Screenshots
+
+![Dashboard](https://github.com/user-attachments/assets/3584b827-5779-4b4a-b5ed-64dfc0c5f2ab)
+
+![Login](https://github.com/user-attachments/assets/58259b12-b6c4-4c11-b12b-644ba3a1f1d2)
+
+![Page 3](https://github.com/user-attachments/assets/fd636ee4-30fa-46fb-ad30-7cc3f5ed9338)
+
+![Page 4](https://github.com/user-attachments/assets/98255d6c-360f-4211-a8a5-b0b7e71cdce2)
+
+![Page 5](https://github.com/user-attachments/assets/b7718400-2eb7-40ef-905d-c5a788604c79)
+
+![Page 6](https://github.com/user-attachments/assets/a2a2428c-60be-4cdf-b4aa-dead9fe274d1)
 <br />
 
 </div>
