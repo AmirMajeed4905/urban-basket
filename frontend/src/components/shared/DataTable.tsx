@@ -25,17 +25,10 @@ interface DataTableProps<T> {
 function getPageNumbers(current: number, total: number): (number | null)[] {
   if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
 
-  const pages: (number | null)[] = [];
+  if (current <= 4) return [1, 2, 3, 4, 5, null, total];
+  if (current >= total - 3) return [1, null, total - 4, total - 3, total - 2, total - 1, total];
 
-  if (current <= 4) {
-    pages.push(1, 2, 3, 4, 5, null, total);
-  } else if (current >= total - 3) {
-    pages.push(1, null, total - 4, total - 3, total - 2, total - 1, total);
-  } else {
-    pages.push(1, null, current - 1, current, current + 1, null, total);
-  }
-
-  return pages;
+  return [1, null, current - 1, current, current + 1, null, total];
 }
 
 export default function DataTable<T extends { id: string }>({
@@ -56,150 +49,155 @@ export default function DataTable<T extends { id: string }>({
   return (
     <div className="bg-white rounded-2xl shadow-card overflow-hidden w-full">
 
-      {/* ── Toolbar ─────────────────────────────────────────────────────── */}
+      {/* ── TOOLBAR ───────────────────────────── */}
       {(onSearch || actions) && (
-        <div className="px-4 sm:px-5 py-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100">
 
           {onSearch && (
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full sm:w-auto sm:min-w-[220px]">
-              <Search size={15} className="text-slate-400 shrink-0" />
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 w-full sm:w-[250px]">
+              <Search size={15} className="text-slate-400" />
               <input
                 value={search}
                 onChange={(e) => onSearch(e.target.value)}
                 placeholder="Search..."
-                className="bg-transparent text-sm outline-none text-slate-700 placeholder:text-slate-400 w-full"
+                className="w-full bg-transparent outline-none text-sm"
               />
             </div>
           )}
 
-          {actions && (
-            <div className="flex items-center gap-2 ml-auto">
-              {actions}
-            </div>
-          )}
+          {actions && <div className="flex gap-2 ml-auto">{actions}</div>}
         </div>
       )}
 
-      {/* ── Table ─────────────────────────────────────────────────────── */}
-      <div className="w-full overflow-x-auto">
+      {/* ── MOBILE VIEW (CARDS) ───────────────────────────── */}
+      <div className="block sm:hidden p-3 space-y-3">
 
-        <table className="w-full min-w-[700px]">
+        {isLoading ? (
+          <div className="text-sm text-gray-400">Loading...</div>
+        ) : data.length === 0 ? (
+          <div className="text-center text-gray-400 py-6">No data found</div>
+        ) : (
+          data.map((row) => (
+            <div key={row.id} className="border rounded-xl p-3 space-y-2">
+
+              {columns.map((col) => (
+                <div key={String(col.key)} className="flex justify-between gap-3 text-sm">
+
+                  <span className="text-gray-500">{col.label}</span>
+
+                  <span className="text-gray-800 text-right break-words">
+                    {col.render ? col.render(row) : (row as any)[col.key]}
+                  </span>
+
+                </div>
+              ))}
+
+            </div>
+          ))
+        )}
+
+      </div>
+
+      {/* ── DESKTOP TABLE ───────────────────────────── */}
+      <div className="hidden sm:block w-full overflow-x-auto">
+
+        <table className="w-full">
 
           <thead>
             <tr className="bg-slate-50 border-b border-slate-100">
+
               {columns.map((col) => (
                 <th
                   key={String(col.key)}
-                  className="px-4 sm:px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap"
+                  className="px-5 py-3 text-left text-xs font-semibold text-slate-500 uppercase"
                 >
                   {col.label}
                 </th>
               ))}
+
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-slate-50">
+          <tbody>
 
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={i}>
                   {columns.map((col) => (
-                    <td key={String(col.key)} className="px-4 sm:px-5 py-3">
-                      <div className="h-4 bg-slate-100 rounded animate-pulse w-24" />
+                    <td key={String(col.key)} className="px-5 py-3">
+                      <div className="h-4 bg-gray-100 animate-pulse rounded w-24" />
                     </td>
                   ))}
                 </tr>
               ))
             ) : data.length === 0 ? (
               <tr>
-                <td
-                  colSpan={columns.length}
-                  className="px-5 py-12 text-center text-slate-400 text-sm"
-                >
+                <td colSpan={columns.length} className="text-center py-10 text-gray-400">
                   No data found
                 </td>
               </tr>
             ) : (
               data.map((row) => (
-                <tr
-                  key={row.id}
-                  className="hover:bg-slate-50/70 transition-colors"
-                >
+                <tr key={row.id} className="border-t hover:bg-gray-50 transition">
+
                   {columns.map((col) => (
                     <td
                       key={String(col.key)}
-                      className="px-4 sm:px-5 py-3.5 text-sm text-slate-700 whitespace-nowrap"
+                      className="px-5 py-3 text-sm text-gray-700"
                     >
-                      {col.render
-                        ? col.render(row)
-                        : (row as any)[col.key]}
+                      {col.render ? col.render(row) : (row as any)[col.key]}
                     </td>
                   ))}
+
                 </tr>
               ))
             )}
+
           </tbody>
+
         </table>
+
       </div>
 
-      {/* ── Pagination ───────────────────────────────────────────────────── */}
-      {totalPages >= 1 && (
-        <div className="px-4 sm:px-5 py-3.5 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+      {/* ── PAGINATION ───────────────────────────── */}
+      {totalPages > 1 && (
+        <div className="p-3 border-t flex flex-wrap justify-center items-center gap-2">
 
-          <p className="text-xs text-slate-400 hidden sm:block">
-            Page <span className="font-semibold text-slate-600">{page}</span> of{" "}
-            <span className="font-semibold text-slate-600">{totalPages}</span>
-          </p>
+          <button
+            onClick={onPrev}
+            disabled={page <= 1}
+            className="p-1.5 border rounded disabled:opacity-40"
+          >
+            <ChevronLeft size={16} />
+          </button>
 
-          <div className="flex flex-wrap items-center justify-center gap-1">
+          {pageNums.map((num, idx) =>
+            num === null ? (
+              <MoreHorizontal key={idx} size={14} />
+            ) : (
+              <button
+                key={num}
+                onClick={() => onPage?.(num)}
+                className={`px-3 py-1 rounded text-sm ${
+                  num === page ? "bg-purple-600 text-white" : "border"
+                }`}
+              >
+                {num}
+              </button>
+            )
+          )}
 
-            <button
-              onClick={onPrev}
-              disabled={page <= 1}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
-            >
-              <ChevronLeft size={15} />
-            </button>
+          <button
+            onClick={onNext}
+            disabled={page >= totalPages}
+            className="p-1.5 border rounded disabled:opacity-40"
+          >
+            <ChevronRight size={16} />
+          </button>
 
-            {pageNums.map((num, idx) =>
-              num === null ? (
-                <span
-                  key={`gap-${idx}`}
-                  className="w-8 h-8 flex items-center justify-center text-slate-400"
-                >
-                  <MoreHorizontal size={14} />
-                </span>
-              ) : (
-                <button
-                  key={num}
-                  onClick={() => onPage?.(num)}
-                  className={`w-8 h-8 rounded-lg text-xs font-semibold ${
-                    num === page
-                      ? "text-white"
-                      : "border border-slate-200 text-slate-600 hover:bg-slate-50"
-                  }`}
-                  style={
-                    num === page
-                      ? { background: "linear-gradient(135deg,#7c3aed,#5b21b6)" }
-                      : {}
-                  }
-                >
-                  {num}
-                </button>
-              )
-            )}
-
-            <button
-              onClick={onNext}
-              disabled={page >= totalPages}
-              className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40"
-            >
-              <ChevronRight size={15} />
-            </button>
-
-          </div>
         </div>
       )}
+
     </div>
   );
 }
