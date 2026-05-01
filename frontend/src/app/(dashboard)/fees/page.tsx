@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import DataTable from "@/components/shared/DataTable";
@@ -104,19 +104,32 @@ export default function FeesPage() {
 
   const [collectForm, setCollectForm] = useState<CollectForm>(defaultCollectForm);
   const [structureForm, setStructureForm] = useState<StructureForm>(defaultStructureForm);
-
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const toast = useToast();
   const qc = useQueryClient();
+
+
 
   // ─── Queries ───────────────────────────────────────────────────────────────
 
   // Search students (for fee collection)
-  const { data: searchResults } = useQuery<StudentBasic[]>({
-    queryKey: ["students-search", rollNoInput],
-    queryFn: () =>
-      api.get(`/students?search=${rollNoInput}&limit=30`).then((r) => r.data.data?.data ?? []),
-    enabled: rollNoInput.length > 0,
-  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(rollNoInput);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [rollNoInput]);
+
+const { data: searchResults = [] } = useQuery<StudentBasic[]>({
+  queryKey: ["students-search", debouncedSearch || ""],
+  queryFn: () =>
+    api
+      .get(`/students?search=${debouncedSearch}&limit=30`)
+      .then((r) => r.data.data.students ?? []),
+  enabled: !!debouncedSearch?.trim(),
+});
 
   // Search students (for history tab)
   const { data: historySearchResults } = useQuery<StudentBasic[]>({
@@ -124,7 +137,7 @@ export default function FeesPage() {
     queryFn: () =>
       api
         .get(`/students?search=${historySearchInput}&limit=30`)
-        .then((r) => r.data.data?.data ?? []),
+        .then((r) => r.data.data.students ?? []),
     enabled: historySearchInput.length > 0,
   });
 
@@ -246,7 +259,7 @@ export default function FeesPage() {
   const handleCollectSubmit = () => {
     if (!collectForm.studentId) return toast.error("Please select a student");
     if (!collectForm.feeStructureId) return toast.error("Please select a fee structure");
-    if (!collectForm.amountPaid || Number(collectForm.amountPaid) < 0)
+    if (collectForm.amountPaid === "" || Number(collectForm.amountPaid) < 0)
       return toast.error("Please enter a valid amount");
     collectMutation.mutate(collectForm);
   };
@@ -369,13 +382,12 @@ export default function FeesPage() {
       label: "Status",
       render: (row: any) => (
         <span
-          className={`badge ${
-            row.status === "PAID"
-              ? "badge-success"
-              : row.status === "PARTIAL"
+          className={`badge ${row.status === "PAID"
+            ? "badge-success"
+            : row.status === "PARTIAL"
               ? "badge-warning"
               : "badge-danger"
-          }`}
+            }`}
         >
           {row.status}
         </span>
@@ -469,9 +481,8 @@ export default function FeesPage() {
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-                tab === t ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
-              }`}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
+                }`}
             >
               {l}
             </button>
@@ -533,7 +544,7 @@ export default function FeesPage() {
                     searchResults &&
                     searchResults.length > 0 && (
                       <div className="absolute z-10 left-0 right-0 border border-slate-200 rounded-xl max-h-48 overflow-y-auto bg-white shadow-lg">
-                        {searchResults.map((student) => (
+                        {searchResults?.map((student) => (
                           <button
                             key={student.id}
                             onClick={() => selectStudent(student)}
@@ -831,37 +842,37 @@ export default function FeesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {loadingStructures
               ? Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="bg-white rounded-2xl shadow-card p-5 animate-pulse">
-                    <div className="h-4 bg-slate-100 rounded w-24 mb-2" />
-                    <div className="h-5 bg-slate-100 rounded w-32 mb-3" />
-                    <div className="h-8 bg-slate-100 rounded w-20" />
-                  </div>
-                ))
+                <div key={i} className="bg-white rounded-2xl shadow-card p-5 animate-pulse">
+                  <div className="h-4 bg-slate-100 rounded w-24 mb-2" />
+                  <div className="h-5 bg-slate-100 rounded w-32 mb-3" />
+                  <div className="h-8 bg-slate-100 rounded w-20" />
+                </div>
+              ))
               : allStructures?.map((s) => (
-                  <div key={s.id} className="stat-card bg-white rounded-2xl shadow-card p-5">
-                    <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-1">
-                      {s.class?.name}-{s.class?.section}
-                    </p>
-                    <p
-                      className="font-bold text-slate-800 text-lg"
-                      style={{ fontFamily: "var(--font-display)" }}
-                    >
-                      {s.name}
-                    </p>
-                    <p
-                      className="text-2xl font-bold text-emerald-600 mt-2"
-                      style={{ fontFamily: "var(--font-display)" }}
-                    >
-                      {formatCurrency(s.amount)}
-                    </p>
-                    <p className="text-slate-400 text-xs mt-1">
-                      Due: {s.dueDay}th · Fine: {formatCurrency(s.lateFine)}
-                    </p>
-                    <p className="text-slate-300 text-xs mt-1">
-                      {s.academicYear?.name}
-                    </p>
-                  </div>
-                ))}
+                <div key={s.id} className="stat-card bg-white rounded-2xl shadow-card p-5">
+                  <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-1">
+                    {s.class?.name}-{s.class?.section}
+                  </p>
+                  <p
+                    className="font-bold text-slate-800 text-lg"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {s.name}
+                  </p>
+                  <p
+                    className="text-2xl font-bold text-emerald-600 mt-2"
+                    style={{ fontFamily: "var(--font-display)" }}
+                  >
+                    {formatCurrency(s.amount)}
+                  </p>
+                  <p className="text-slate-400 text-xs mt-1">
+                    Due: {s.dueDay}th · Fine: {formatCurrency(s.lateFine)}
+                  </p>
+                  <p className="text-slate-300 text-xs mt-1">
+                    {s.academicYear?.name}
+                  </p>
+                </div>
+              ))}
           </div>
         )}
 
