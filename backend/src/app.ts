@@ -22,12 +22,15 @@ import noticeRoutes from "./routes/notice.routes";
 const app = express();
 
 app.use(helmet());
-app.use(cors({
-  origin: env.CLIENT_URL,
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-}));
+
+app.use(
+  cors({
+    origin: "https://ems-bahawalnagr.vercel.app",
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, max: 10,
