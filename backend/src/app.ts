@@ -25,8 +25,10 @@ app.use(helmet());
 
 app.use(
   cors({
-    origin: "https://ems-bahawalnagr.vercel.app",
-    credentials: true,
+  origin: [
+      "http://localhost:3000",
+      "https://ems-bahawalnagr.vercel.app"
+    ],    credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"],
   })
