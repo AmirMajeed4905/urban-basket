@@ -154,6 +154,8 @@ export const collectFeeService = async (
 
 /* =========================================================
    STUDENT FEE HISTORY
+   FIX: Ab { payments, summary } object return hoga
+        jo frontend expect karta hai
 ========================================================= */
 
 export const getStudentFeeHistoryService = async (studentId: string) => {
@@ -163,13 +165,29 @@ export const getStudentFeeHistoryService = async (studentId: string) => {
 
   if (!student) throw new ApiError(404, "Student not found");
 
-  return prisma.feePayment.findMany({
+  const payments = await prisma.feePayment.findMany({
     where: { studentId },
     include: {
       feeStructure: true,
     },
     orderBy: [{ year: "desc" }, { month: "desc" }],
   });
+
+  // Summary calculate karo
+  const totalPaid = payments.reduce((sum, p) => sum + Number(p.amountPaid || 0), 0);
+  const totalDue = payments.reduce((sum, p) => sum + Number(p.amountDue || 0), 0);
+  const totalDiscount = payments.reduce((sum, p) => sum + Number(p.discount || 0), 0);
+  const balance = totalDue - totalPaid;
+
+  return {
+    payments,
+    summary: {
+      totalPaid,
+      totalDue,
+      totalDiscount,
+      balance,
+    },
+  };
 };
 
 /* =========================================================
@@ -209,7 +227,6 @@ export const getDefaultersService = async (
 export const getFeeStatsService = async (month: number, year: number) => {
   const [students, payments] = await Promise.all([
     prisma.student.count({ where: { status: "ACTIVE" } }),
-
     prisma.feePayment.findMany({
       where: { month, year },
     }),
@@ -227,9 +244,9 @@ export const getFeeStatsService = async (month: number, year: number) => {
     0
   );
 
-  const paid = payments.filter(p => p.status === "PAID").length;
-  const unpaid = payments.filter(p => p.status === "UNPAID").length;
-  const partial = payments.filter(p => p.status === "PARTIAL").length;
+  const paid = payments.filter((p) => p.status === "PAID").length;
+  const unpaid = payments.filter((p) => p.status === "UNPAID").length;
+  const partial = payments.filter((p) => p.status === "PARTIAL").length;
 
   return {
     total: totalStudents,
@@ -260,7 +277,6 @@ export const getMonthlyFeeStatsService = async (year: number) => {
     month: item.month,
     collected: Number(item._sum.amountPaid || 0),
     pending:
-      Number(item._sum.amountDue || 0) -
-      Number(item._sum.amountPaid || 0),
+      Number(item._sum.amountDue || 0) - Number(item._sum.amountPaid || 0),
   }));
 };

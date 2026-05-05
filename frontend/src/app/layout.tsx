@@ -8,7 +8,7 @@ import ToastProvider from "@/components/shared/ToastProvider";
 
 
 export const metadata: Metadata = {
-  title: "BEST International School ERP",
+  title: "",
   description: "School Management System — BEST International School System",
   manifest: "/manifest.json",
   appleWebApp: {

@@ -7,7 +7,7 @@ export type AttendanceStatus = "PRESENT" | "ABSENT" | "LATE" | "LEAVE";
 
 export interface User {
   id: string; name: string; email: string; role: Role;
-  phone?: string; avatar?: string; isActive: boolean; createdAt: string;
+  phone?: string; avatar?: string; isActive: boolean; createdAt: string;address?: string; 
 }
 export interface AcademicYear {
   id: string; name: string; startDate: string; endDate: string; isCurrent: boolean;

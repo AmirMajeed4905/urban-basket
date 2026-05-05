@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Header from "@/components/layout/Header";
 import DataTable from "@/components/shared/DataTable";
@@ -92,53 +92,87 @@ export default function FeesPage() {
   const [month, setMonth] = useState(currentMonth);
   const [year, setYear] = useState(currentYear);
 
-  // Student search state
+  // ── Collect fee search ──
   const [rollNoInput, setRollNoInput] = useState("");
   const [selectedStudent, setSelectedStudent] = useState<StudentBasic | null>(null);
   const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
-  // Student history search state
+  // ── Student history search ──
   const [historySearchInput, setHistorySearchInput] = useState("");
   const [historyStudent, setHistoryStudent] = useState<StudentBasic | null>(null);
   const [showHistoryDropdown, setShowHistoryDropdown] = useState(false);
+  const [debouncedHistorySearch, setDebouncedHistorySearch] = useState("");
+
+  // ── Refs for outside-click detection ──
+  const collectSearchRef = useRef<HTMLDivElement>(null);
+  const historySearchRef = useRef<HTMLDivElement>(null);
 
   const [collectForm, setCollectForm] = useState<CollectForm>(defaultCollectForm);
   const [structureForm, setStructureForm] = useState<StructureForm>(defaultStructureForm);
-  const [debouncedSearch, setDebouncedSearch] = useState("");
+
   const toast = useToast();
   const qc = useQueryClient();
 
-
-
-  // ─── Queries ───────────────────────────────────────────────────────────────
-
-  // Search students (for fee collection)
+  // ─── Debounce: collect fee search ─────────────────────────────────────────
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(rollNoInput);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [rollNoInput]);
 
-const { data: searchResults = [] } = useQuery<StudentBasic[]>({
-  queryKey: ["students-search", debouncedSearch || ""],
-  queryFn: () =>
-    api
-      .get(`/students?search=${debouncedSearch}&limit=30`)
-      .then((r) => r.data.data.students ?? []),
-  enabled: !!debouncedSearch?.trim(),
-});
+  // ─── Debounce: history search ─────────────────────────────────────────────
 
-  // Search students (for history tab)
-  const { data: historySearchResults } = useQuery<StudentBasic[]>({
-    queryKey: ["students-search-history", historySearchInput],
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedHistorySearch(historySearchInput);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [historySearchInput]);
+
+  // ─── Outside click: close both dropdowns ──────────────────────────────────
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (
+        collectSearchRef.current &&
+        !collectSearchRef.current.contains(e.target as Node)
+      ) {
+        setShowSearchDropdown(false);
+      }
+      if (
+        historySearchRef.current &&
+        !historySearchRef.current.contains(e.target as Node)
+      ) {
+        setShowHistoryDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // ─── Queries ──────────────────────────────────────────────────────────────
+
+  // Search students — collect fee tab
+  const { data: searchResults = [] } = useQuery<StudentBasic[]>({
+    queryKey: ["students-search", debouncedSearch],
     queryFn: () =>
       api
-        .get(`/students?search=${historySearchInput}&limit=30`)
+        .get(`/students?search=${debouncedSearch}&limit=30`)
         .then((r) => r.data.data.students ?? []),
-    enabled: historySearchInput.length > 0,
+    enabled: !!debouncedSearch?.trim(),
+  });
+
+  // Search students — history tab (FIX: use debounced value)
+  const { data: historySearchResults = [] } = useQuery<StudentBasic[]>({
+    queryKey: ["students-search-history", debouncedHistorySearch],
+    queryFn: () =>
+      api
+        .get(`/students?search=${debouncedHistorySearch}&limit=30`)
+        .then((r) => r.data.data.students ?? []),
+    enabled: !!debouncedHistorySearch?.trim(),
   });
 
   // Fee stats
@@ -165,7 +199,7 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
     enabled: tab === "structures" || tab === "collect" || tab === "add-structure",
   });
 
-  // ✅ FIX: Filter fee structures by selected student's class
+  // Filter fee structures by selected student's class
   const filteredStructures =
     selectedStudent && allStructures
       ? allStructures.filter((s) => s.classId === selectedStudent.classId)
@@ -185,7 +219,7 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
     enabled: tab === "add-structure",
   });
 
-  // Student fee history
+  // Student fee history (FIX: tab check add kiya, correct enabled condition)
   const { data: studentHistory, isLoading: loadingHistory } = useQuery({
     queryKey: ["student-fee-history", historyStudent?.id],
     queryFn: () =>
@@ -195,7 +229,7 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
     enabled: !!historyStudent?.id && tab === "student-history",
   });
 
-  // ─── Mutations ─────────────────────────────────────────────────────────────
+  // ─── Mutations ────────────────────────────────────────────────────────────
 
   const collectMutation = useMutation({
     mutationFn: (d: CollectForm) =>
@@ -237,14 +271,14 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
     },
   });
 
-  // ─── Handlers ──────────────────────────────────────────────────────────────
+  // ─── Handlers ─────────────────────────────────────────────────────────────
 
   const selectStudent = (student: StudentBasic) => {
     setSelectedStudent(student);
     setCollectForm((prev) => ({
       ...prev,
       studentId: student.id,
-      feeStructureId: "", // Reset — filter karo pehle
+      feeStructureId: "",
     }));
     setRollNoInput("");
     setShowSearchDropdown(false);
@@ -273,7 +307,7 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
     structureMutation.mutate(structureForm);
   };
 
-  // ─── Table Columns ─────────────────────────────────────────────────────────
+  // ─── Table Columns ────────────────────────────────────────────────────────
 
   const defaulterCols = [
     {
@@ -382,12 +416,13 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
       label: "Status",
       render: (row: any) => (
         <span
-          className={`badge ${row.status === "PAID"
-            ? "badge-success"
-            : row.status === "PARTIAL"
+          className={`badge ${
+            row.status === "PAID"
+              ? "badge-success"
+              : row.status === "PARTIAL"
               ? "badge-warning"
               : "badge-danger"
-            }`}
+          }`}
         >
           {row.status}
         </span>
@@ -404,7 +439,7 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
     },
   ];
 
-  // ─── Render ────────────────────────────────────────────────────────────────
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div>
@@ -481,8 +516,9 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
             <button
               key={t}
               onClick={() => setTab(t)}
-              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${tab === t ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
-                }`}
+              className={`px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
+                tab === t ? "bg-white text-blue-600 shadow-sm" : "text-slate-500"
+              }`}
             >
               {l}
             </button>
@@ -501,12 +537,15 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
         {/* ── Collect Fee Tab ── */}
         {tab === "collect" && (
           <div className="bg-white rounded-2xl shadow-card p-6 animate-in max-w-2xl space-y-4">
-            <h3 className="font-bold text-slate-800 mb-5" style={{ fontFamily: "var(--font-display)" }}>
+            <h3
+              className="font-bold text-slate-800 mb-5"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
               Collect Fee
             </h3>
 
-            {/* Student Search */}
-            <div className="space-y-2 relative">
+            {/* Student Search — FIX: ref attached for outside-click */}
+            <div className="space-y-2 relative" ref={collectSearchRef}>
               <label className="block text-xs font-semibold text-slate-600">
                 Search Student (Roll No or Name)
               </label>
@@ -541,10 +580,9 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
                   />
                   {showSearchDropdown &&
                     rollNoInput.length > 0 &&
-                    searchResults &&
                     searchResults.length > 0 && (
                       <div className="absolute z-10 left-0 right-0 border border-slate-200 rounded-xl max-h-48 overflow-y-auto bg-white shadow-lg">
-                        {searchResults?.map((student) => (
+                        {searchResults.map((student) => (
                           <button
                             key={student.id}
                             onClick={() => selectStudent(student)}
@@ -562,7 +600,8 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
                     )}
                   {showSearchDropdown &&
                     rollNoInput.length > 0 &&
-                    searchResults?.length === 0 && (
+                    debouncedSearch === rollNoInput &&
+                    searchResults.length === 0 && (
                       <p className="text-xs text-slate-400 px-1">No students found</p>
                     )}
                 </>
@@ -707,7 +746,11 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
 
             <button
               onClick={handleCollectSubmit}
-              disabled={collectMutation.isPending || !selectedStudent || !collectForm.feeStructureId}
+              disabled={
+                collectMutation.isPending ||
+                !selectedStudent ||
+                !collectForm.feeStructureId
+              }
               className="w-full py-3 rounded-xl text-white font-semibold text-sm disabled:opacity-60 transition-opacity"
               style={{ background: "linear-gradient(135deg,#10b981,#059669)" }}
             >
@@ -719,8 +762,11 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
         {/* ── Student History Tab ── */}
         {tab === "student-history" && (
           <div className="space-y-4">
-            {/* Search */}
-            <div className="bg-white rounded-2xl shadow-card p-5 max-w-md relative">
+            {/* Search — FIX: ref + onFocus added */}
+            <div
+              className="bg-white rounded-2xl shadow-card p-5 max-w-md relative"
+              ref={historySearchRef}
+            >
               <label className="block text-xs font-semibold text-slate-600 mb-2">
                 <User size={12} className="inline mr-1" />
                 Search Student
@@ -739,6 +785,7 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
                     onClick={() => {
                       setHistoryStudent(null);
                       setHistorySearchInput("");
+                      setDebouncedHistorySearch("");
                     }}
                     className="text-xs text-red-500 font-semibold px-2"
                   >
@@ -753,12 +800,12 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
                       setHistorySearchInput(e.target.value);
                       setShowHistoryDropdown(true);
                     }}
+                    onFocus={() => setShowHistoryDropdown(true)} // FIX: was missing
                     placeholder="Type name or roll no..."
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
                   />
                   {showHistoryDropdown &&
                     historySearchInput.length > 0 &&
-                    historySearchResults &&
                     historySearchResults.length > 0 && (
                       <div className="absolute z-10 left-5 right-5 border border-slate-200 rounded-xl max-h-48 overflow-y-auto bg-white shadow-lg">
                         {historySearchResults.map((s) => (
@@ -767,6 +814,7 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
                             onClick={() => {
                               setHistoryStudent(s);
                               setHistorySearchInput("");
+                              setDebouncedHistorySearch("");
                               setShowHistoryDropdown(false);
                             }}
                             className="w-full text-left px-3 py-2 hover:bg-blue-50 border-b last:border-b-0 text-sm"
@@ -781,12 +829,23 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
                         ))}
                       </div>
                     )}
+                  {showHistoryDropdown &&
+                    historySearchInput.length > 0 &&
+                    debouncedHistorySearch === historySearchInput &&
+                    historySearchResults.length === 0 && (
+                      <p className="text-xs text-slate-400 px-1 mt-1">No students found</p>
+                    )}
                 </>
               )}
             </div>
 
-            {/* Summary Cards */}
-            {historyStudent && studentHistory && (
+            {/* Loading state */}
+            {historyStudent && loadingHistory && (
+              <p className="text-slate-400 text-sm">Loading history...</p>
+            )}
+
+            {/* Summary Cards — FIX: correct null check */}
+            {historyStudent && !loadingHistory && studentHistory?.summary && (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <StatCard
@@ -826,13 +885,26 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
                 <DataTable
                   columns={historyCols}
                   data={studentHistory.payments ?? []}
-                  isLoading={loadingHistory}
+                  isLoading={false}
                 />
               </>
             )}
 
+            {/* FIX: correct no-records check — payments array empty ya API ne kuch nahi diya */}
+            {historyStudent &&
+              !loadingHistory &&
+              studentHistory &&
+              !studentHistory?.payments?.length && (
+                <p className="text-slate-400 text-sm">
+                  No fee records found for this student.
+                </p>
+              )}
+
+            {/* API returned nothing at all */}
             {historyStudent && !loadingHistory && !studentHistory && (
-              <p className="text-slate-400 text-sm">No fee records found for this student.</p>
+              <p className="text-slate-400 text-sm">
+                No fee records found for this student.
+              </p>
             )}
           </div>
         )}
@@ -842,37 +914,41 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {loadingStructures
               ? Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="bg-white rounded-2xl shadow-card p-5 animate-pulse">
-                  <div className="h-4 bg-slate-100 rounded w-24 mb-2" />
-                  <div className="h-5 bg-slate-100 rounded w-32 mb-3" />
-                  <div className="h-8 bg-slate-100 rounded w-20" />
-                </div>
-              ))
+                  <div
+                    key={i}
+                    className="bg-white rounded-2xl shadow-card p-5 animate-pulse"
+                  >
+                    <div className="h-4 bg-slate-100 rounded w-24 mb-2" />
+                    <div className="h-5 bg-slate-100 rounded w-32 mb-3" />
+                    <div className="h-8 bg-slate-100 rounded w-20" />
+                  </div>
+                ))
               : allStructures?.map((s) => (
-                <div key={s.id} className="stat-card bg-white rounded-2xl shadow-card p-5">
-                  <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-1">
-                    {s.class?.name}-{s.class?.section}
-                  </p>
-                  <p
-                    className="font-bold text-slate-800 text-lg"
-                    style={{ fontFamily: "var(--font-display)" }}
+                  <div
+                    key={s.id}
+                    className="stat-card bg-white rounded-2xl shadow-card p-5"
                   >
-                    {s.name}
-                  </p>
-                  <p
-                    className="text-2xl font-bold text-emerald-600 mt-2"
-                    style={{ fontFamily: "var(--font-display)" }}
-                  >
-                    {formatCurrency(s.amount)}
-                  </p>
-                  <p className="text-slate-400 text-xs mt-1">
-                    Due: {s.dueDay}th · Fine: {formatCurrency(s.lateFine)}
-                  </p>
-                  <p className="text-slate-300 text-xs mt-1">
-                    {s.academicYear?.name}
-                  </p>
-                </div>
-              ))}
+                    <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-1">
+                      {s.class?.name}-{s.class?.section}
+                    </p>
+                    <p
+                      className="font-bold text-slate-800 text-lg"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      {s.name}
+                    </p>
+                    <p
+                      className="text-2xl font-bold text-emerald-600 mt-2"
+                      style={{ fontFamily: "var(--font-display)" }}
+                    >
+                      {formatCurrency(s.amount)}
+                    </p>
+                    <p className="text-slate-400 text-xs mt-1">
+                      Due: {s.dueDay}th · Fine: {formatCurrency(s.lateFine)}
+                    </p>
+                    <p className="text-slate-300 text-xs mt-1">{s.academicYear?.name}</p>
+                  </div>
+                ))}
           </div>
         )}
 
@@ -900,7 +976,9 @@ const { data: searchResults = [] } = useQuery<StudentBasic[]>({
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">Class</label>
+                <label className="block text-xs font-semibold text-slate-600 mb-1">
+                  Class
+                </label>
                 <select
                   value={structureForm.classId}
                   onChange={(e) =>
