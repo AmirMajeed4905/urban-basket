@@ -165,7 +165,7 @@ export default function FeesPage() {
     enabled: !!debouncedSearch?.trim(),
   });
 
-  // Search students — history tab (FIX: use debounced value)
+  // Search students — history tab
   const { data: historySearchResults = [] } = useQuery<StudentBasic[]>({
     queryKey: ["students-search-history", debouncedHistorySearch],
     queryFn: () =>
@@ -192,10 +192,14 @@ export default function FeesPage() {
     enabled: tab === "defaulters",
   });
 
-  // All fee structures
+  // All fee structures — always enabled so collect & add-structure tabs work instantly
   const { data: allStructures, isLoading: loadingStructures } = useQuery<FeeStructure[]>({
     queryKey: ["fee-structures"],
-    queryFn: () => api.get("/fees/structures").then((r) => r.data.data ?? []),
+    queryFn: () => api.get("/fees/structures").then((r) => {
+      // FIX: handle both r.data.data (array) and r.data.data.structures (nested)
+      const d = r.data.data;
+      return Array.isArray(d) ? d : d?.structures ?? d?.data ?? [];
+    }),
     enabled: tab === "structures" || tab === "collect" || tab === "add-structure",
   });
 
@@ -205,21 +209,34 @@ export default function FeesPage() {
       ? allStructures.filter((s) => s.classId === selectedStudent.classId)
       : allStructures ?? [];
 
-  // Classes (for add structure form)
+  // FIX: Classes query — enabled for add-structure tab AND preload when navigating
   const { data: classes } = useQuery<{ id: string; name: string; section: string }[]>({
     queryKey: ["classes"],
-    queryFn: () => api.get("/classes").then((r) => r.data.data?.data ?? []),
-    enabled: tab === "add-structure",
+    queryFn: () =>
+      api.get("/classes").then((r) => {
+        // FIX: handle both r.data.data (array) and r.data.data.data (nested pagination)
+        const d = r.data.data;
+        return Array.isArray(d) ? d : d?.data ?? d?.classes ?? [];
+      }),
+    // FIX: always enabled so data is ready when user switches to add-structure tab
+    enabled: true,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache — classes don't change often
   });
 
-  // Academic years
+  // FIX: Academic years query — always enabled & correct response parsing
   const { data: academicYears } = useQuery<{ id: string; name: string }[]>({
     queryKey: ["academic-years"],
-    queryFn: () => api.get("/academic-years").then((r) => r.data.data ?? []),
-    enabled: tab === "add-structure",
+    queryFn: () =>
+      api.get("/classes/academic-years").then((r) => {
+        const d = r.data?.data ?? r.data;
+        return Array.isArray(d) ? d : d?.academicYears ?? d?.data ?? [];
+      }),
+    // FIX: always enabled so dropdown is populated when tab opens
+    enabled: true,
+    staleTime: 5 * 60 * 1000,
   });
 
-  // Student fee history (FIX: tab check add kiya, correct enabled condition)
+  // Student fee history
   const { data: studentHistory, isLoading: loadingHistory } = useQuery({
     queryKey: ["student-fee-history", historyStudent?.id],
     queryFn: () =>
@@ -464,7 +481,8 @@ export default function FeesPage() {
             onChange={(e) => setYear(Number(e.target.value))}
             className="px-4 py-2 rounded-xl border border-slate-200 bg-white text-sm outline-none focus:border-blue-500"
           >
-            {[2024, 2025, 2026].map((y) => (
+            {/* FIX: dynamic year range based on currentYear so it never goes stale */}
+            {Array.from({ length: 4 }, (_, i) => currentYear - 1 + i).map((y) => (
               <option key={y}>{y}</option>
             ))}
           </select>
@@ -544,7 +562,7 @@ export default function FeesPage() {
               Collect Fee
             </h3>
 
-            {/* Student Search — FIX: ref attached for outside-click */}
+            {/* Student Search */}
             <div className="space-y-2 relative" ref={collectSearchRef}>
               <label className="block text-xs font-semibold text-slate-600">
                 Search Student (Roll No or Name)
@@ -664,14 +682,18 @@ export default function FeesPage() {
               </div>
               <div>
                 <label className="block text-xs font-semibold text-slate-600 mb-1">Year</label>
-                <input
-                  type="number"
+                {/* FIX: changed to select dropdown (was plain number input — error-prone) */}
+                <select
                   value={collectForm.year}
                   onChange={(e) =>
                     setCollectForm({ ...collectForm, year: Number(e.target.value) })
                   }
                   className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
-                />
+                >
+                  {Array.from({ length: 4 }, (_, i) => currentYear - 1 + i).map((y) => (
+                    <option key={y}>{y}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -762,7 +784,7 @@ export default function FeesPage() {
         {/* ── Student History Tab ── */}
         {tab === "student-history" && (
           <div className="space-y-4">
-            {/* Search — FIX: ref + onFocus added */}
+            {/* Search */}
             <div
               className="bg-white rounded-2xl shadow-card p-5 max-w-md relative"
               ref={historySearchRef}
@@ -800,7 +822,7 @@ export default function FeesPage() {
                       setHistorySearchInput(e.target.value);
                       setShowHistoryDropdown(true);
                     }}
-                    onFocus={() => setShowHistoryDropdown(true)} // FIX: was missing
+                    onFocus={() => setShowHistoryDropdown(true)}
                     placeholder="Type name or roll no..."
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
                   />
@@ -844,7 +866,7 @@ export default function FeesPage() {
               <p className="text-slate-400 text-sm">Loading history...</p>
             )}
 
-            {/* Summary Cards — FIX: correct null check */}
+            {/* Summary Cards */}
             {historyStudent && !loadingHistory && studentHistory?.summary && (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -890,7 +912,6 @@ export default function FeesPage() {
               </>
             )}
 
-            {/* FIX: correct no-records check — payments array empty ya API ne kuch nahi diya */}
             {historyStudent &&
               !loadingHistory &&
               studentHistory &&
@@ -900,7 +921,6 @@ export default function FeesPage() {
                 </p>
               )}
 
-            {/* API returned nothing at all */}
             {historyStudent && !loadingHistory && !studentHistory && (
               <p className="text-slate-400 text-sm">
                 No fee records found for this student.
@@ -961,114 +981,141 @@ export default function FeesPage() {
             >
               Create Fee Structure
             </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Fee Name
-                </label>
-                <input
-                  value={structureForm.name}
-                  onChange={(e) =>
-                    setStructureForm({ ...structureForm, name: e.target.value })
-                  }
-                  placeholder="e.g., Monthly Tuition Fee"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
-                />
+
+            {/* FIX: show loading state if classes/years still fetching */}
+            {(!classes || !academicYears) ? (
+              <div className="space-y-3 animate-pulse">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <div key={i} className="h-10 bg-slate-100 rounded-xl" />
+                ))}
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Class
-                </label>
-                <select
-                  value={structureForm.classId}
-                  onChange={(e) =>
-                    setStructureForm({ ...structureForm, classId: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
-                >
-                  <option value="">Select class</option>
-                  {classes?.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}-{c.section}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Academic Year
-                </label>
-                <select
-                  value={structureForm.academicYearId}
-                  onChange={(e) =>
-                    setStructureForm({ ...structureForm, academicYearId: e.target.value })
-                  }
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
-                >
-                  <option value="">Select year</option>
-                  {academicYears?.map((y) => (
-                    <option key={y.id} value={y.id}>
-                      {y.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+            ) : (
+              <div className="space-y-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Amount (Rs)
+                    Fee Name
+                  </label>
+                  <input
+                    value={structureForm.name}
+                    onChange={(e) =>
+                      setStructureForm({ ...structureForm, name: e.target.value })
+                    }
+                    placeholder="e.g., Monthly Tuition Fee"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Class
+                  </label>
+                  <select
+                    value={structureForm.classId}
+                    onChange={(e) =>
+                      setStructureForm({ ...structureForm, classId: e.target.value })
+                    }
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
+                  >
+                    <option value="">Select class</option>
+                    {(classes ?? []).map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}-{c.section}
+                      </option>
+                    ))}
+                  </select>
+                  {/* FIX: warn if no classes found */}
+                  {(classes ?? []).length === 0 && (
+                    <p className="text-xs text-orange-500 mt-1">
+                      ⚠ No classes found. Please add classes first.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Academic Year
+                  </label>
+                  <select
+                    value={structureForm.academicYearId}
+                    onChange={(e) =>
+                      setStructureForm({ ...structureForm, academicYearId: e.target.value })
+                    }
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
+                  >
+                    <option value="">Select year</option>
+                    {(academicYears ?? []).map((y) => (
+                      <option key={y.id} value={y.id}>
+                        {y.name}
+                      </option>
+                    ))}
+                  </select>
+                  {/* FIX: warn if no academic years found */}
+                  {(academicYears ?? []).length === 0 && (
+                    <p className="text-xs text-orange-500 mt-1">
+                      ⚠ No academic years found. Please add an academic year first.
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      Amount (Rs)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={structureForm.amount}
+                      onChange={(e) =>
+                        setStructureForm({ ...structureForm, amount: e.target.value })
+                      }
+                      placeholder="0"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-600 mb-1">
+                      Due Day (1-28)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="28"
+                      value={structureForm.dueDay}
+                      onChange={(e) =>
+                        setStructureForm({ ...structureForm, dueDay: e.target.value })
+                      }
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-600 mb-1">
+                    Late Fine (Rs)
                   </label>
                   <input
                     type="number"
-                    min="1"
-                    value={structureForm.amount}
+                    min="0"
+                    value={structureForm.lateFine}
                     onChange={(e) =>
-                      setStructureForm({ ...structureForm, amount: e.target.value })
+                      setStructureForm({ ...structureForm, lateFine: e.target.value })
                     }
                     placeholder="0"
                     className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-600 mb-1">
-                    Due Day (1-28)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="28"
-                    value={structureForm.dueDay}
-                    onChange={(e) =>
-                      setStructureForm({ ...structureForm, dueDay: e.target.value })
-                    }
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
-                  />
-                </div>
+
+                <button
+                  onClick={handleStructureSubmit}
+                  disabled={structureMutation.isPending}
+                  className="w-full py-3 rounded-xl text-white font-semibold text-sm disabled:opacity-60 transition-opacity"
+                  style={{ background: "linear-gradient(135deg,#8b5cf6,#7c3aed)" }}
+                >
+                  {structureMutation.isPending ? "Creating..." : "Create Structure"}
+                </button>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-600 mb-1">
-                  Late Fine (Rs)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={structureForm.lateFine}
-                  onChange={(e) =>
-                    setStructureForm({ ...structureForm, lateFine: e.target.value })
-                  }
-                  placeholder="0"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm outline-none focus:border-blue-500"
-                />
-              </div>
-              <button
-                onClick={handleStructureSubmit}
-                disabled={structureMutation.isPending}
-                className="w-full py-3 rounded-xl text-white font-semibold text-sm disabled:opacity-60 transition-opacity"
-                style={{ background: "linear-gradient(135deg,#8b5cf6,#7c3aed)" }}
-              >
-                {structureMutation.isPending ? "Creating..." : "Create Structure"}
-              </button>
-            </div>
+            )}
           </div>
         )}
       </div>
