@@ -67,3 +67,4 @@ export const deleteAdmin = asyncHandler(async (req: Request, res: Response) => {
   await deleteAdminService(id);
   sendResponse(res, 200, "Admin deleted successfully");
 });
+

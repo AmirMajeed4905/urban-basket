@@ -204,3 +204,29 @@ export const deleteAdminService = async (id: string) => {
   // Cascade — refresh tokens pehle delete honge (schema mein onDelete: Cascade hai)
   await prisma.user.delete({ where: { id } });
 };
+
+
+// ════════════════════════════════════════════════════════════
+// CHANGE PASSWORD — authenticated user apna password change kare
+// ════════════════════════════════════════════════════════════
+export const changePasswordService = async (
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(404, "User not found");
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) throw new ApiError(401, "Current password is incorrect");
+
+  const hashed = await bcrypt.hash(newPassword, 12);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { password: hashed },
+  });
+
+  // Sab refresh tokens invalidate karo — re-login zaroori hoga
+  await prisma.refreshToken.deleteMany({ where: { userId } });
+};
